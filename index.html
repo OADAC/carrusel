@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cilindro Arquitectónico Triple</title>
+    <style>
+        :root {
+            --card-width: 180px;  /* Ancho más pequeño para que quepan */
+            --card-height: 120px;
+            --gap: 15px;
+            --ring-gap: 160px; /* Distancia vertical entre anillos */
+        }
+
+        body {
+            margin: 0;
+            background: #000 radial-gradient(circle, #1e293b 0%, #000000 100%);
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 2000px; /* Perspectiva profunda */
+        }
+
+        /* --- CONTENEDOR PRINCIPAL 3D --- */
+        .scene {
+            position: relative;
+            width: 0;
+            height: 0;
+            transform-style: preserve-3d;
+            transform: rotateX(-10deg); /* Leve inclinación para ver profundidad */
+        }
+
+        /* --- ANILLOS (RINGS) --- */
+        .ring {
+            position: absolute;
+            transform-style: preserve-3d;
+            /* Centramos el anillo */
+            top: 50%;
+            left: 50%;
+        }
+
+        /* Posiciones Verticales */
+        .ring.top { transform: translateY(calc(var(--ring-gap) * -1)); }
+        .ring.mid { transform: translateY(0); }
+        .ring.bot { transform: translateY(var(--ring-gap)); }
+
+        /* Animaciones de Rotación */
+        .animate-cw { animation: spin-cw 40s infinite linear; }
+        .animate-ccw { animation: spin-ccw 40s infinite linear; }
+
+        /* Pausar al pasar el mouse por encima para poder hacer click */
+        .ring:hover { animation-play-state: paused; }
+
+        @keyframes spin-cw {
+            from { transform: translateY(var(--y-pos)) rotateY(0deg); }
+            to { transform: translateY(var(--y-pos)) rotateY(360deg); }
+        }
+
+        @keyframes spin-ccw {
+            from { transform: translateY(var(--y-pos)) rotateY(360deg); }
+            to { transform: translateY(var(--y-pos)) rotateY(0deg); }
+        }
+
+        /* --- TARJETAS --- */
+        .card {
+            position: absolute;
+            width: var(--card-width);
+            height: var(--card-height);
+            left: calc(var(--card-width) * -0.5);
+            top: calc(var(--card-height) * -0.5);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 8px;
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: 0.3s;
+            backface-visibility: hidden; /* Rendimiento */
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+            filter: brightness(1.2);
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* --- LIGHTBOX (AMPLIACIÓN) --- */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 85%;
+            border-radius: 4px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            border: 2px solid #333;
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .lightbox.active img {
+            transform: scale(1);
+        }
+
+        .close-hint {
+            position: absolute;
+            bottom: 30px;
+            color: #fff;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div class="ring top animate-cw" style="--y-pos: -180px;"></div>
+        <div class="ring mid animate-ccw" style="--y-pos: 0px;"></div>
+        <div class="ring bot animate-cw" style="--y-pos: 180px;"></div>
+    </div>
+
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Ampliada">
+        <div class="close-hint">Click para cerrar</div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const imageFiles = [
+            "freepik__crea-renders-realistas-arquitectnicos-3d-de-la-viv__77849.png", "freepik__crea-renders-realistas-arquitectnicos-3d-de-la-viv__77850.png",
+            "freepik__crea-renders-realistas-arquitectnicos-3d-del-proce__77847.png", "freepik__crea-renders-realistas-arquitectnicos-3d-del-proce__77848.png",
+            "freepik__genera-un-corte-de-seccin-arquitectnico-de-la-imag__77880.png", "freepik__genera-un-corte-de-seccin-arquitectnico-de-la-imag__77881.png",
+            "freepik__genera-un-corte-de-seccin-arquitectnico-de-la-imag__77882.png", "freepik__genera-un-corte-de-seccin-arquitectnico-de-la-imag__77883.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-con-plan__77842.png", "freepik__genera-una-infografa-arquitectnica-tcnica-con-plan__77843.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-con-plan__77844.png", "freepik__genera-una-infografa-arquitectnica-tcnica-con-plan__77845.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-con-plan__77846.png", "freepik__genera-una-infografa-arquitectnica-tcnica-de-este-__77860.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-de-este-__77861.png", "freepik__genera-una-infografa-arquitectnica-tcnica-de-este-__77862.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-de-este-__77863.png", "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77851.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77852.png", "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77853.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77854.png", "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77855.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77856.png", "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77857.png",
+            "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77858.png", "freepik__genera-una-infografa-arquitectnica-tcnica-tipo-pro__77859.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77905.png", "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77906.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77907.png", "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77908.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77913.png", "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77914.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77915.png", "freepik__genera-una-infografa-tcnica-arquitectnica-de-la-vi__77916.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77884.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77885.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77886.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77887.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77888.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77889.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77890.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77891.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77892.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77893.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77894.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77895.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77896.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77897.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77898.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77899.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77900.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77901.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77902.png", "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77903.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-del-mdul__77904.png", "freepik__genera-una-infografa-tcnica-arquitectnica-moderna-__77909.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-moderna-__77910.png", "freepik__genera-una-infografa-tcnica-arquitectnica-moderna-__77911.png",
+            "freepik__genera-una-infografa-tcnica-arquitectnica-moderna-__77912.png", "freepik__genera-una-infogrfica-arquitectnica-para-presentac__77864.png",
+            "freepik__genera-una-infogrfica-arquitectnica-para-presentac__77865.png", "freepik__genera-una-infogrfica-arquitectnica-para-presentac__77866.png",
+            "freepik__genera-una-infogrfica-arquitectnica-para-presentac__77867.png", "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77868.png",
+            "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77869.png", "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77870.png",
+            "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77871.png", "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77872.png",
+            "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77873.png", "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77874.png",
+            "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77875.png", "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77876.png",
+            "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77877.png", "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77878.png",
+            "freepik__genera-una-presentacin-infogrfica-arquitectnica-de__77879.png"
+        ];
+
+        // --- LÓGICA ---
+        const rings = {
+            top: document.querySelector('.ring.top'),
+            mid: document.querySelector('.ring.mid'),
+            bot: document.querySelector('.ring.bot')
+        };
+
+        const ITEMS_PER_RING = 20;
+        const CARD_WIDTH = 180; 
+        const GAP = 15;
+        // Calculo del radio para 20 items
+        const RADIUS = Math.round( (CARD_WIDTH + GAP) / 2 / Math.tan(Math.PI / ITEMS_PER_RING) );
+
+        function createCard(file, indexInRing, totalInRing) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // Imagen
+            const img = document.createElement('img');
+            img.src = file;
+            img.loading = "lazy";
+            card.appendChild(img);
+
+            // Posicionamiento en círculo
+            const angle = indexInRing * (360 / totalInRing);
+            card.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px)`;
+
+            // Evento CLICK (Ampliar)
+            card.onclick = () => openLightbox(file);
+
+            return card;
+        }
+
+        function init() {
+            console.log("Radio del cilindro:", RADIUS);
+
+            // Dividir las 60 imágenes en 3 grupos de 20
+            const group1 = imageFiles.slice(0, 20);
+            const group2 = imageFiles.slice(20, 40);
+            const group3 = imageFiles.slice(40, 60);
+
+            // Llenar anillo superior
+            group1.forEach((file, i) => {
+                rings.top.appendChild(createCard(file, i, 20));
+            });
+
+            // Llenar anillo medio
+            group2.forEach((file, i) => {
+                rings.mid.appendChild(createCard(file, i, 20));
+            });
+
+            // Llenar anillo inferior
+            group3.forEach((file, i) => {
+                rings.bot.appendChild(createCard(file, i, 20));
+            });
+        }
+
+        // --- LIGHTBOX FUNCIONES ---
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+
+        function openLightbox(src) {
+            lightboxImg.src = src;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            // Limpiar src después de la animación para evitar parpadeos
+            setTimeout(() => { lightboxImg.src = ""; }, 400);
+        }
+
+        // Iniciar
+        window.onload = init;
+
+    </script>
+</body>
+</html>
