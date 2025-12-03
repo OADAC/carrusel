@@ -157,6 +157,13 @@
     </div>
 
     <script>
+        // --- CONFIGURACIÓN DE GITHUB RELEASE ---
+        // Construimos la URL base donde están alojadas las imágenes (Assets del Release v4)
+        const ghUser = "oadac";
+        const ghRepo = "carrusel";
+        const ghTag = "v4";
+        const baseUrl = `https://github.com/${ghUser}/${ghRepo}/releases/download/${ghTag}/`;
+
         // --- DATA ---
         const imageFiles = [
             "freepik__crea-renders-realistas-arquitectnicos-3d-de-la-viv__77849.png", "freepik__crea-renders-realistas-arquitectnicos-3d-de-la-viv__77850.png",
@@ -218,7 +225,10 @@
             
             // Imagen
             const img = document.createElement('img');
-            img.src = file;
+            
+            // MODIFICACIÓN: Concatenamos la URL base del release con el nombre del archivo
+            img.src = baseUrl + file;
+            
             img.loading = "lazy";
             card.appendChild(img);
 
@@ -227,7 +237,8 @@
             card.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px)`;
 
             // Evento CLICK (Ampliar)
-            card.onclick = () => openLightbox(file);
+            // MODIFICACIÓN: Pasamos también la URL completa al lightbox
+            card.onclick = () => openLightbox(baseUrl + file);
 
             return card;
         }
